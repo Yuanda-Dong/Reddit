@@ -139,7 +139,7 @@ export type Database = {
           pid: number
           reply: string
         }
-        Returns: undefined
+        Returns: number
       }
     }
     Enums: {

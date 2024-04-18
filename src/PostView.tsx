@@ -15,72 +15,58 @@ import {
 } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
 
-// interface Node {
-// 	id: number;
-// 	content: string;
-// 	children: Node[];
-// }
+interface Node {
+	id: number;
+	content: string;
+	children: Node[];
+}
 
 export default function PostView() {
 	const { postId } = useParams();
-	const [post, setPost] = useState<ReactElement>();
 	const { isOpen, onOpen, onClose } = useDisclosure();
-	const clicked = useRef<number>();
-
-	// useEffect(()=>{
-
-	// 	async function getNode(){
-
-	// 	}
-
-
-	// })
+	const clicked = useRef<Node>();
+	const [node, setNode] = useState<Node>();
 
 	useEffect(() => {
-		async function display(id: number, indent: number): Promise<ReactElement> {
-			indent += 2;
-			let content = (await supaClient.from("comments").select("*").filter("id", "eq", id).single())
-				.data?.content;
-			let children =
+		async function getNode(id: number): Promise<Node> {
+			const content = (
+				await supaClient.from("comments").select("*").filter("id", "eq", id).single()
+			).data?.content!;
+			const children =
 				(await supaClient.from("comments_relation").select("cid").eq("pid", id)).data ?? [];
-			const childElements = await Promise.all(
-				children.map(async (c) => (
-					<Box ml={indent} key={c.cid} border="solid" m="1em">
-						{await display(c.cid, indent + 2)}
-					</Box>
-				))
-			);
-			return (
-				<>
-					<Box>
-						{content}
-						<Button
-							size="xs"
-							ml="1em"
-							onClick={() => {
-								onOpen();
-								clicked.current = id;
-							}}
-						>
-							Reply
-						</Button>
-					</Box>
-					{childElements}
-				</>
-			);
+			const childrenNodes = await Promise.all(children.map(async (c) => await getNode(c.cid)));
+			return { id, content, children: childrenNodes };
 		}
 		async function go() {
-			setPost(await display(Number(postId!), 2));
+			setNode(await getNode(Number(postId)));
 		}
 		go();
-	}, []);
+	});
+
+	function display(node: Node, indent: number): ReactElement {
+		return (
+			<Box ml={indent} border="solid" my="1em">
+				<Box>
+					{node?.content}
+					<Button
+						size="xs"
+						ml="1em"
+						onClick={() => {
+							onOpen();
+							clicked.current = node;
+						}}
+					>
+						Reply
+					</Button>
+				</Box>
+				{node?.children.map((e) => display(e, indent + 4))}
+			</Box>
+		);
+	}
 
 	return (
 		<>
-			<Box w="100%" border="solid" m="1em">
-				{post}
-			</Box>
-
+			{node ? display(node, 4) : <>Loading...</>}
 			<Modal isOpen={isOpen} onClose={onClose}>
 				<ModalOverlay />
 				<ModalContent
@@ -89,7 +75,9 @@ export default function PostView() {
 						e.preventDefault();
 						const formData = new FormData(e.target as HTMLFormElement);
 						const reply = formData.get("reply") as string;
-						await supaClient.rpc("reply", { pid: clicked.current!, reply });
+						const rid = (await supaClient.rpc("reply", { pid: clicked.current?.id!, reply })).data;
+						clicked.current?.children.push({ id: rid!, children: [], content: reply });
+						setNode(node);
 						onClose();
 					}}
 				>

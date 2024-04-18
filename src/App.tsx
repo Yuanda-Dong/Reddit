@@ -45,7 +45,7 @@ export const UserContext = createContext<RedditUserInfo>({ session: null, profil
 function Layout() {
 	const redditUserInfo = useSession();
 	return (
-		<Box bg="lightsteelblue" h="100vh">
+		<Box bg="lightsteelblue" minHeight="100vh">
 			<UserContext.Provider value={redditUserInfo}>
 				<Navbar />
 				<Outlet />
