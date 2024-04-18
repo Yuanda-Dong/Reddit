@@ -16,6 +16,7 @@ import {
 import { useParams } from "react-router-dom";
 
 interface Node {
+	author: string;
 	id: number;
 	content: string;
 	children: Node[];
@@ -29,25 +30,27 @@ export default function PostView() {
 
 	useEffect(() => {
 		async function getNode(id: number): Promise<Node> {
-			const content = (
-				await supaClient.from("comments").select("*").filter("id", "eq", id).single()
-			).data?.content!;
+			const resp = await supaClient.from("comments").select("*").filter("id", "eq", id).single();
+			const content = resp.data?.content!;
+			const author = (
+				await supaClient.from("user_profiles").select("username").eq("user_id", resp.data?.user_id!)
+			).data?.[0].username!;
 			const children =
 				(await supaClient.from("comments_relation").select("cid").eq("pid", id)).data ?? [];
 			const childrenNodes = await Promise.all(children.map(async (c) => await getNode(c.cid)));
-			return { id, content, children: childrenNodes };
+			return { author, id, content, children: childrenNodes };
 		}
 		async function go() {
 			setNode(await getNode(Number(postId)));
 		}
 		go();
-	});
+	},[]);
 
 	function display(node: Node, indent: number): ReactElement {
 		return (
 			<Box ml={indent} border="solid" my="1em">
 				<Box>
-					{node?.content}
+					{node?.author}: {node?.content}
 					<Button
 						size="xs"
 						ml="1em"
@@ -76,7 +79,13 @@ export default function PostView() {
 						const formData = new FormData(e.target as HTMLFormElement);
 						const reply = formData.get("reply") as string;
 						const rid = (await supaClient.rpc("reply", { pid: clicked.current?.id!, reply })).data;
-						clicked.current?.children.push({ id: rid!, children: [], content: reply });
+
+						clicked.current?.children.push({
+							author: "you",
+							id: rid!,
+							children: [],
+							content: reply,
+						});
 						setNode(node);
 						onClose();
 					}}

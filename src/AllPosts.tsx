@@ -82,7 +82,7 @@ export default function AllPosts() {
 						await f();
 					}}
 				>
-					<ModalHeader>Enter your reply!</ModalHeader>
+					<ModalHeader>Enter your post!</ModalHeader>
 					<ModalBody pb={6}>
 						<FormControl>
 							<Input placeholder="This is a new post!" name="post" />

@@ -38,6 +38,7 @@ export default function Welcome() {
 	const { isOpen, onOpen, onClose } = useDisclosure();
 	const { session } = useContext(UserContext);
 	const navigate = useNavigate();
+	// const user = await supaClient.auth.getUser();
 
 	return (
 		<>
@@ -45,7 +46,7 @@ export default function Welcome() {
 				<ModalOverlay />
 				<ModalContent
 					as="form"
-					onSubmit={(e) => {
+					onSubmit={async (e) => {
 						e.preventDefault();
 						const formData = new FormData(e.target as HTMLFormElement);
 						supaClient
