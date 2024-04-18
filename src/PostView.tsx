@@ -44,7 +44,7 @@ export default function PostView() {
 			setNode(await getNode(Number(postId)));
 		}
 		go();
-	},[]);
+	}, []);
 
 	function display(node: Node, indent: number): ReactElement {
 		return (
@@ -80,13 +80,15 @@ export default function PostView() {
 						const reply = formData.get("reply") as string;
 						const rid = (await supaClient.rpc("reply", { pid: clicked.current?.id!, reply })).data;
 
-						clicked.current?.children.push({
-							author: "you",
-							id: rid!,
-							children: [],
-							content: reply,
-						});
+						if (rid) {
+							clicked.current?.children.push({
+								author: "you",
+								id: rid!,
+								children: [],
+								content: reply,
+							});
 						setNode(node);
+						}
 						onClose();
 					}}
 				>
